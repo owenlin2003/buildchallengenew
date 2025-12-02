@@ -105,7 +105,6 @@ class Producer(threading.Thread):
                     self.items_produced += 1
                 
                 source_index += 1
-                time.sleep(0.01)
                 
             except queue.Full:
                 if self.shutdown_event.is_set():
@@ -174,17 +173,21 @@ class Consumer(threading.Thread):
             try:
                 item = self.shared_queue.get(block=True, timeout=1.0)
                 
-                # Check for sentinel value - stop immediately when we see one
+                # Check for sentinel value - only stop if shutdown is signaled
+                # This ensures we don't stop early when multiple producers are running
                 if item is None:
-                    break
+                    if self.shutdown_event.is_set():
+                        break
+                    # If shutdown not set yet, put sentinel back and continue
+                    # (another consumer might need it, or we'll see it again after shutdown)
+                    self.shared_queue.put(None, block=False)
+                    continue
                 
                 with self._dest_lock:
                     self.destination.append(item)
                 
                 with self._lock:
                     self.items_consumed += 1
-                
-                time.sleep(0.01)
                 
             except queue.Empty:
                 # Timeout - check if shutdown was requested
