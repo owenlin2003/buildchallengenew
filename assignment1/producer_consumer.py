@@ -111,7 +111,7 @@ class Producer(threading.Thread):
                     break
                 continue
             except Exception as e:
-                print(f"Producer {self.producer_id} error: {e}")
+                print(f"Producer {self.producer_id} unexpected error: {e}")
                 break
         
         # Put sentinel value to signal completion
@@ -157,19 +157,6 @@ class Consumer(threading.Thread):
     def run(self) -> None:
         """Main consumer loop - gets items from queue and stores in destination."""
         while True:
-            if self.shutdown_event.is_set():
-                # Drain remaining items
-                try:
-                    while True:
-                        item = self.shared_queue.get(block=False)
-                        if item is not None:
-                            with self._dest_lock:
-                                self.destination.append(item)
-                            with self._lock:
-                                self.items_consumed += 1
-                except queue.Empty:
-                    break
-            
             try:
                 item = self.shared_queue.get(block=True, timeout=0.1)
                 
@@ -189,8 +176,12 @@ class Consumer(threading.Thread):
                 if self.shutdown_event.is_set():
                     break
                 continue
+            except queue.Full as e:
+                # Queue full exception (shouldn't happen with blocking get)
+                print(f"Consumer {self.consumer_id} queue error: {e}")
+                break
             except Exception as e:
-                print(f"Consumer {self.consumer_id} error: {e}")
+                print(f"Consumer {self.consumer_id} unexpected error: {e}")
                 break
         
         print(f"Consumer {self.consumer_id} finished. Consumed {self.items_consumed} items.")
