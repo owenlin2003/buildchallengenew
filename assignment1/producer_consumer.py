@@ -262,18 +262,14 @@ class ProducerConsumer:
         for producer in self.producers:
             producer.start()
     
-    def wait_for_completion(self, timeout: Optional[float] = None) -> None:
+    def _ensure_sufficient_sentinels(self) -> None:
         """
-        Wait for all threads to complete.
+        Ensure there are enough sentinel values in the queue for all consumers.
         
-        Args:
-            timeout: Maximum time to wait for completion
+        Each producer puts one sentinel when it finishes. If there are more
+        consumers than producers, we need to add additional sentinels so each
+        consumer can receive one and stop gracefully.
         """
-        for producer in self.producers:
-            producer.join(timeout=timeout)
-        
-        # Put additional sentinels if we have more consumers than producers
-        # Each consumer needs to see one sentinel to stop
         num_sentinels_needed = len(self.consumers)
         num_sentinels_from_producers = len(self.producers)
         additional_sentinels = max(0, num_sentinels_needed - num_sentinels_from_producers)
@@ -283,9 +279,23 @@ class ProducerConsumer:
                 self.shared_queue.put(None, block=True, timeout=1.0)
             except Exception:
                 pass
+    
+    def wait_for_completion(self, timeout: Optional[float] = None) -> None:
+        """
+        Wait for all threads to complete.
         
+        Args:
+            timeout: Maximum time to wait for completion
+        """
+        # Wait for all producers to finish
+        for producer in self.producers:
+            producer.join(timeout=timeout)
+        
+        # Ensure each consumer gets a sentinel to stop
+        self._ensure_sufficient_sentinels()
+        
+        # Signal shutdown and wait for consumers
         self.shutdown_event.set()
-        
         for consumer in self.consumers:
             consumer.join(timeout=timeout)
     

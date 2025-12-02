@@ -9,7 +9,7 @@ import csv
 from collections import defaultdict
 from functools import reduce
 from datetime import datetime
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Callable, Union
 
 
 def load_csv_data(filename: str) -> List[Dict[str, str]]:
@@ -27,6 +27,41 @@ def load_csv_data(filename: str) -> List[Dict[str, str]]:
         return list(reader)
 
 
+def group_and_aggregate(
+    transactions: List[Dict[str, str]],
+    key_extractor: Union[str, Callable[[Dict[str, str]], str]],
+    value_extractor: Callable[[Dict[str, str]], float] = lambda t: float(t["total_amount"])
+) -> Dict[str, float]:
+    """
+    Generic function to group transactions and aggregate values.
+    
+    Groups transactions by a key (field name or extracted value) and sums
+    the values extracted from each transaction.
+    
+    Args:
+        transactions: List of transaction dictionaries
+        key_extractor: Either a string field name or a function that extracts
+                      the grouping key from a transaction
+        value_extractor: Function that extracts the value to aggregate from
+                        a transaction (defaults to total_amount as float)
+    
+    Returns:
+        Dictionary mapping group keys to aggregated values
+    """
+    # Convert string field name to extractor function
+    if isinstance(key_extractor, str):
+        field_name = key_extractor
+        key_extractor = lambda t: t[field_name]
+    
+    def aggregate(acc, transaction):
+        key = key_extractor(transaction)
+        value = value_extractor(transaction)
+        acc[key] = acc.get(key, 0) + value
+        return acc
+    
+    return reduce(aggregate, transactions, {})
+
+
 def total_revenue_by_product(transactions: List[Dict[str, str]]) -> Dict[str, float]:
     """
     Calculate total revenue grouped by product name.
@@ -40,13 +75,7 @@ def total_revenue_by_product(transactions: List[Dict[str, str]]) -> Dict[str, fl
     Returns:
         Dictionary mapping product names to total revenue
     """
-    def add_to_product(acc, transaction):
-        product = transaction["product_name"]
-        amount = float(transaction["total_amount"])
-        acc[product] = acc.get(product, 0) + amount
-        return acc
-    
-    return reduce(add_to_product, transactions, {})
+    return group_and_aggregate(transactions, "product_name")
 
 
 def total_revenue_by_category(transactions: List[Dict[str, str]]) -> Dict[str, float]:
@@ -59,13 +88,7 @@ def total_revenue_by_category(transactions: List[Dict[str, str]]) -> Dict[str, f
     Returns:
         Dictionary mapping categories to total revenue
     """
-    def add_to_category(acc, transaction):
-        category = transaction["category"]
-        amount = float(transaction["total_amount"])
-        acc[category] = acc.get(category, 0) + amount
-        return acc
-    
-    return reduce(add_to_category, transactions, {})
+    return group_and_aggregate(transactions, "category")
 
 
 def top_salespeople_by_revenue(transactions: List[Dict[str, str]], top_n: int = 5) -> List[Tuple[str, float]]:
@@ -77,17 +100,11 @@ def top_salespeople_by_revenue(transactions: List[Dict[str, str]], top_n: int = 
     Args:
         transactions: List of transaction dictionaries
         top_n: Number of top salespeople to return
-        
+    
     Returns:
         List of tuples (salesperson, revenue) sorted by revenue descending
     """
-    def add_to_salesperson(acc, transaction):
-        salesperson = transaction["salesperson"]
-        amount = float(transaction["total_amount"])
-        acc[salesperson] = acc.get(salesperson, 0) + amount
-        return acc
-    
-    revenue_by_person = reduce(add_to_salesperson, transactions, {})
+    revenue_by_person = group_and_aggregate(transactions, "salesperson")
     
     sorted_items = sorted(
         revenue_by_person.items(),
@@ -108,13 +125,7 @@ def sales_by_region(transactions: List[Dict[str, str]]) -> Dict[str, float]:
     Returns:
         Dictionary mapping regions to total sales
     """
-    def add_to_region(acc, transaction):
-        region = transaction["region"]
-        amount = float(transaction["total_amount"])
-        acc[region] = acc.get(region, 0) + amount
-        return acc
-    
-    return reduce(add_to_region, transactions, {})
+    return group_and_aggregate(transactions, "region")
 
 
 def average_transaction_value(transactions: List[Dict[str, str]]) -> float:
@@ -150,14 +161,10 @@ def monthly_sales_trend(transactions: List[Dict[str, str]]) -> Dict[str, float]:
     Returns:
         Dictionary mapping month strings (YYYY-MM) to total revenue
     """
-    def add_to_month(acc, transaction):
-        date_str = transaction["date"]
-        month = date_str[:7]
-        amount = float(transaction["total_amount"])
-        acc[month] = acc.get(month, 0) + amount
-        return acc
-    
-    return reduce(add_to_month, transactions, {})
+    return group_and_aggregate(
+        transactions,
+        key_extractor=lambda t: t["date"][:7]  # Extract YYYY-MM from date
+    )
 
 
 def print_analysis_results(transactions: List[Dict[str, str]]) -> None:
