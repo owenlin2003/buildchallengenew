@@ -156,7 +156,7 @@ class TestConsumer(unittest.TestCase):
         producer.start()
         producer.join()
         
-        consumer = Consumer(1, destination, queue, shutdown_event, 1)
+        consumer = Consumer(1, destination, queue, shutdown_event)
         
         consumer.start()
         consumer.join(timeout=2.0)
@@ -173,7 +173,7 @@ class TestConsumer(unittest.TestCase):
         shutdown_event = threading.Event()
         
         producer = Producer(1, source, queue, shutdown_event)
-        consumer = Consumer(1, destination, queue, shutdown_event, 1)
+        consumer = Consumer(1, destination, queue, shutdown_event)
         
         consumer.start()
         producer.start()
@@ -196,7 +196,7 @@ class TestConsumer(unittest.TestCase):
         producer.start()
         producer.join()
         
-        consumer = Consumer(1, destination, queue, shutdown_event, [producer])
+        consumer = Consumer(1, destination, queue, shutdown_event)
         consumer.start()
         consumer.join(timeout=2.0)
         
@@ -212,14 +212,17 @@ class TestConsumer(unittest.TestCase):
         shutdown_event = threading.Event()
         
         producer = Producer(1, source, queue, shutdown_event)
-        consumer1 = Consumer(1, destination1, queue, shutdown_event, 1)
-        consumer2 = Consumer(2, destination2, queue, shutdown_event, 1)
+        consumer1 = Consumer(1, destination1, queue, shutdown_event)
+        consumer2 = Consumer(2, destination2, queue, shutdown_event)
         
         consumer1.start()
         consumer2.start()
         producer.start()
         
         producer.join()
+        # Put additional sentinel for second consumer (1 producer, 2 consumers)
+        queue.put(None)
+        
         consumer1.join(timeout=2.0)
         consumer2.join(timeout=2.0)
         
@@ -244,7 +247,7 @@ class TestConsumer(unittest.TestCase):
         producer.start()
         producer.join()
         
-        consumer = Consumer(1, destination, queue, shutdown_event, [producer])
+        consumer = Consumer(1, destination, queue, shutdown_event)
         consumer.start()
         
         time.sleep(0.1)
