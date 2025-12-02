@@ -4,7 +4,7 @@ This repository contains solutions for the Intuit Software Engineering Build Cha
 
 ## Setup Instructions
 
-No external dependencies required. Uses only Python standard library. Python 3.11+ recommended.
+Uses only Python standard library. Python 3.11+ recommended. Only requires pytest for running tests: `pip install pytest`
 
 ## Assignment 1: Producer-Consumer Pattern
 
