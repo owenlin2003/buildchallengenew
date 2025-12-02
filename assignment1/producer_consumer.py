@@ -99,7 +99,7 @@ class Producer(threading.Thread):
         while source_index < len(self.source) and not self.shutdown_event.is_set():
             try:
                 item = self.source[source_index]
-                self.shared_queue.put(item, block=True, timeout=1.0)
+                self.shared_queue.put(item, block=True, timeout=0.1)
                 
                 with self._lock:
                     self.items_produced += 1
@@ -116,7 +116,7 @@ class Producer(threading.Thread):
         
         # Put sentinel value to signal completion
         try:
-            self.shared_queue.put(None, block=True, timeout=1.0)
+            self.shared_queue.put(None, block=True, timeout=0.1)
         except Exception as e:
             print(f"Producer {self.producer_id} error putting sentinel: {e}")
         
@@ -171,18 +171,13 @@ class Consumer(threading.Thread):
                     break
             
             try:
-                item = self.shared_queue.get(block=True, timeout=1.0)
+                item = self.shared_queue.get(block=True, timeout=0.1)
                 
-                # Check for sentinel value - only stop if shutdown is signaled
-                # This ensures we don't stop early when multiple producers are running
+                # Check for sentinel value - stop immediately when we see one
                 if item is None:
                     if self.shutdown_event.is_set():
-                        break
-                    # If shutdown not set yet, put sentinel back and continue
-                    # (another consumer might need it, or we'll see it again after shutdown)
-                    self.shared_queue.put(None, block=False)
-                    continue
-                
+                        break #only stop if all producers finished
+                    continue #otheriwse, skip sentinel and keep going
                 with self._dest_lock:
                     self.destination.append(item)
                 
@@ -260,8 +255,7 @@ class ProducerConsumer:
         for consumer in self.consumers:
             consumer.start()
         
-        time.sleep(0.1)
-        
+        time.sleep(0.1) #consumers waiting and ready for queue BEFORE producers putting items        
         for producer in self.producers:
             producer.start()
     
@@ -279,7 +273,7 @@ class ProducerConsumer:
         
         for _ in range(additional_sentinels):
             try:
-                self.shared_queue.put(None, block=True, timeout=1.0)
+                self.shared_queue.put(None, block=True, timeout=0.1)
             except Exception:
                 pass
     
