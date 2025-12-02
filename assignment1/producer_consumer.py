@@ -115,6 +115,12 @@ class Producer(threading.Thread):
                 print(f"Producer {self.producer_id} error: {e}")
                 break
         
+        # Put sentinel value to signal completion
+        try:
+            self.shared_queue.put(None, block=True, timeout=1.0)
+        except Exception as e:
+            print(f"Producer {self.producer_id} error putting sentinel: {e}")
+        
         print(f"Producer {self.producer_id} finished. Produced {self.items_produced} items.")
     
     def get_items_produced(self) -> int:
@@ -130,7 +136,7 @@ class Consumer(threading.Thread):
     """
     
     def __init__(self, consumer_id: int, destination: List[Any], shared_queue: SharedQueue,
-                 shutdown_event: threading.Event, producers: List[Producer]):
+                 shutdown_event: threading.Event, num_producers: int):
         """
         Initialize the consumer thread.
         
@@ -139,46 +145,65 @@ class Consumer(threading.Thread):
             destination: List to store consumed items
             shared_queue: The shared queue to get items from
             shutdown_event: Event to signal shutdown
-            producers: List of producer threads to check if all are done
+            num_producers: Number of producers (to know how many sentinels to expect)
         """
         super().__init__(name=f"Consumer-{consumer_id}", daemon=False)
         self.consumer_id = consumer_id
         self.destination = destination
         self.shared_queue = shared_queue
         self.shutdown_event = shutdown_event
-        self.producers = producers
+        self.num_producers = num_producers
         self.items_consumed = 0
         self._lock = threading.Lock()
         self._dest_lock = threading.Lock()
     
     def run(self) -> None:
         """Main consumer loop - gets items from queue and stores in destination."""
+        sentinels_seen = 0
+        
         while True:
             if self.shutdown_event.is_set():
+                # Drain remaining items
                 try:
-                    item = self.shared_queue.get(block=False)
-                    with self._dest_lock:
-                        self.destination.append(item)
-                    with self._lock:
-                        self.items_consumed += 1
-                    continue
+                    while True:
+                        item = self.shared_queue.get(block=False)
+                        if item is None:
+                            sentinels_seen += 1
+                        else:
+                            with self._dest_lock:
+                                self.destination.append(item)
+                            with self._lock:
+                                self.items_consumed += 1
                 except queue.Empty:
                     break
             
             try:
                 item = self.shared_queue.get(block=True, timeout=1.0)
                 
-                with self._dest_lock:
-                    self.destination.append(item)
-                
-                with self._lock:
-                    self.items_consumed += 1
-                
-                time.sleep(0.01)
+                # Check for sentinel value
+                if item is None:
+                    sentinels_seen += 1
+                    # Re-queue sentinel for other consumers (if there are multiple consumers)
+                    if self.num_producers > 0 and sentinels_seen < self.num_producers:
+                        try:
+                            self.shared_queue.put(None, block=True, timeout=1.0)
+                        except Exception:
+                            pass
+                    # Stop when we've seen all sentinels (one per producer)
+                    if sentinels_seen >= self.num_producers:
+                        break
+                else:
+                    with self._dest_lock:
+                        self.destination.append(item)
+                    
+                    with self._lock:
+                        self.items_consumed += 1
+                    
+                    time.sleep(0.01)
                 
             except queue.Empty:
-                all_producers_done = all(not p.is_alive() for p in self.producers) if self.producers else True
-                if all_producers_done and self.shared_queue.empty():
+                # Timeout - check if shutdown was requested
+                if self.shutdown_event.is_set():
                     break
                 continue
             except Exception as e:
@@ -238,7 +263,7 @@ class ProducerConsumer:
             The created Consumer instance
         """
         consumer = Consumer(consumer_id, destination, self.shared_queue,
-                           self.shutdown_event, self.producers)
+                           self.shutdown_event, len(self.producers))
         self.consumers.append(consumer)
         return consumer
     

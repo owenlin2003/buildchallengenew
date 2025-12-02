@@ -80,7 +80,8 @@ class TestProducer(unittest.TestCase):
         producer.join()
         
         self.assertEqual(producer.get_items_produced(), 10)
-        self.assertEqual(queue.qsize(), 10)
+        # Queue contains 10 items + 1 sentinel
+        self.assertEqual(queue.qsize(), 11)
         
         for i in range(10):
             item = queue.get()
@@ -97,7 +98,8 @@ class TestProducer(unittest.TestCase):
         producer.join()
         
         self.assertEqual(producer.get_items_produced(), 0)
-        self.assertTrue(queue.empty())
+        # Queue contains 1 sentinel (even with empty source)
+        self.assertEqual(queue.qsize(), 1)
     
     def test_producer_respects_shutdown_event(self):
         """Test that producer stops when shutdown event is set."""
@@ -134,7 +136,8 @@ class TestProducer(unittest.TestCase):
         
         self.assertEqual(producer1.get_items_produced(), 5)
         self.assertEqual(producer2.get_items_produced(), 5)
-        self.assertEqual(queue.qsize(), 10)
+        # Queue contains 10 items + 2 sentinels (one per producer)
+        self.assertEqual(queue.qsize(), 12)
 
 
 class TestConsumer(unittest.TestCase):
@@ -150,7 +153,10 @@ class TestConsumer(unittest.TestCase):
             queue.put(f"item-{i}")
         
         producer = Producer(1, [], queue, shutdown_event)
-        consumer = Consumer(1, destination, queue, shutdown_event, [producer])
+        producer.start()
+        producer.join()
+        
+        consumer = Consumer(1, destination, queue, shutdown_event, 1)
         
         consumer.start()
         consumer.join(timeout=2.0)
@@ -167,7 +173,7 @@ class TestConsumer(unittest.TestCase):
         shutdown_event = threading.Event()
         
         producer = Producer(1, source, queue, shutdown_event)
-        consumer = Consumer(1, destination, queue, shutdown_event, [producer])
+        consumer = Consumer(1, destination, queue, shutdown_event, 1)
         
         consumer.start()
         producer.start()
@@ -206,8 +212,8 @@ class TestConsumer(unittest.TestCase):
         shutdown_event = threading.Event()
         
         producer = Producer(1, source, queue, shutdown_event)
-        consumer1 = Consumer(1, destination1, queue, shutdown_event, [producer])
-        consumer2 = Consumer(2, destination2, queue, shutdown_event, [producer])
+        consumer1 = Consumer(1, destination1, queue, shutdown_event, 1)
+        consumer2 = Consumer(2, destination2, queue, shutdown_event, 1)
         
         consumer1.start()
         consumer2.start()
