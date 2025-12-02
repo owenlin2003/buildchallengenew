@@ -2,24 +2,11 @@
 
 Producer-consumer pattern implementation with thread synchronization. Producers read from a source container and put items into a shared queue. Consumers pull from the queue and store items in a destination container.
 
-## Features
+The implementation uses Python's queue.Queue which handles thread safety and blocking automatically. When the queue is full, put() blocks until space is available. When it's empty, get() blocks until an item is available. No manual locks are needed for queue operations.
 
-- Thread-safe queue using Python's `queue.Queue`
-- Blocking operations - `put()` waits when queue is full, `get()` waits when queue is empty
-- Supports multiple producers and consumers
-- Graceful shutdown with event signaling
-- Tracks statistics per thread
+Four main classes make up the implementation. SharedQueue wraps queue.Queue with max capacity. Producer threads read from a source and put items in the queue. Consumer threads get items from the queue and store them in a destination. ProducerConsumer orchestrates everything together.
 
-## Implementation
-
-Four main classes:
-
-- `SharedQueue`: Wrapper around `queue.Queue` with max capacity
-- `Producer`: Thread that reads from source and puts items in queue
-- `Consumer`: Thread that gets items from queue and stores in destination
-- `ProducerConsumer`: Orchestrator that manages everything
-
-The queue handles all synchronization internally. When it's full, `put()` blocks. When it's empty, `get()` blocks. No manual locks needed for queue operations.
+The sentinel pattern is used for clean shutdown. Each producer puts a sentinel value (None) into the queue when finished. Consumers stop immediately when they see a sentinel. ProducerConsumer ensures there are enough sentinels for all consumers by adding extras if needed.
 
 ## Usage
 
@@ -54,15 +41,7 @@ python producer_consumer.py
 pytest assignment1/test_producer_consumer.py -v
 ```
 
-Tests cover:
-- Single producer/consumer
-- Multiple producers, single consumer
-- Single producer, multiple consumers
-- Multiple producers and consumers
-- Queue capacity limits
-- Thread synchronization correctness
-- Graceful shutdown
-- Edge cases like empty source and concurrent access
+Tests cover single producer/consumer, multiple producers with single consumer, single producer with multiple consumers, multiple producers and consumers, queue capacity limits, thread synchronization correctness, graceful shutdown, and edge cases like empty source and concurrent access.
 
 ## Sample Output
 
@@ -84,5 +63,4 @@ Queue size: 0
 
 ## Design Notes
 
-Used `queue.Queue` instead of manual locks because it handles thread safety and blocking automatically. Separate Producer/Consumer classes for cleaner code and easier testing. Statistics use locks for thread-safe counting. Shutdown uses an Event to signal all threads to stop cleanly. Consumers check producer completion status only after queue timeouts to avoid race conditions where consumers exit before producers start.
-
+Used queue.Queue instead of manual locks because it handles thread safety and blocking automatically. Separate Producer/Consumer classes make the code cleaner and easier to test. Statistics use locks for thread-safe counting. The sentinel pattern eliminates race conditions by having producers signal completion directly through the queue rather than checking thread status.

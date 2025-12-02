@@ -8,104 +8,80 @@ This repository contains solutions for the Intuit Software Engineering Build Cha
 
 Thread synchronization implementation using Python's queue module. Demonstrates proper thread communication and synchronization with multiple producers and consumers.
 
-**Key Features:**
-- Thread-safe queue using `queue.Queue`
-- Blocking operations - `put()` waits when queue is full, `get()` waits when queue is empty
-- Supports multiple producers and consumers
-- Graceful shutdown with sentinel pattern
-- Tracks statistics per thread
+The implementation includes a thread-safe queue wrapper, producer threads that read from a source and put items into the queue, consumer threads that get items from the queue and store them in a destination, and an orchestrator class that manages everything together.
 
-**Implementation:**
-- `SharedQueue`: Wrapper around `queue.Queue` with max capacity
-- `Producer`: Thread that reads from source and puts items in queue
-- `Consumer`: Thread that gets items from queue and stores in destination
-- `ProducerConsumer`: Orchestrator that manages everything
+Key features include blocking operations where put() waits when the queue is full and get() waits when the queue is empty, support for multiple producers and consumers, graceful shutdown using the sentinel pattern, and statistics tracking per thread.
 
-**Usage:**
+To run the example:
 ```bash
 cd assignment1
 python producer_consumer.py
 ```
 
-**Tests:**
+To run tests:
 ```bash
 pytest assignment1/test_producer_consumer.py -v
 ```
 
-**Documentation:** See [assignment1/README.md](assignment1/README.md) for detailed documentation.
-
----
+See assignment1/README.md for detailed documentation.
 
 ### Assignment 2: CSV Data Analysis with Functional Programming
 
 CSV data analysis implementation using functional programming paradigms. Reads sales transaction data and performs analytical queries using map, filter, reduce, and other functional constructs.
 
-**Key Features:**
-- CSV data loading and parsing
-- Six analytical queries using functional programming patterns
-- Grouping and aggregation operations
-- Sorting and filtering operations
-- Comprehensive unit test coverage
+The implementation includes six analytical queries: total revenue by product, total revenue by category, top 5 salespeople by revenue, sales by region, average transaction value, and monthly sales trend. All queries use functional programming patterns like reduce() for aggregation, map() for transformation, and sorted() with lambda functions for ordering.
 
-**Analytical Queries:**
-1. Total revenue by product
-2. Total revenue by category
-3. Top 5 salespeople by revenue
-4. Sales by region
-5. Average transaction value
-6. Monthly sales trend
-
-**Usage:**
+To generate sample data:
 ```bash
 cd assignment2
-python generate_data.py  # Generate sample data
-python data_analyzer.py  # Run analysis
+python generate_data.py
 ```
 
-**Tests:**
+To run analysis:
+```bash
+python data_analyzer.py
+```
+
+To run tests:
 ```bash
 pytest assignment2/test_data_analyzer.py -v
 ```
 
-**Documentation:** See [assignment2/README.md](assignment2/README.md) for detailed documentation.
-
----
+See assignment2/README.md for detailed documentation.
 
 ## Requirements
 
-- Python 3.11+
-- pytest (for running tests)
+Python 3.11+ and pytest for running tests.
 
 ## Repository Structure
 
 ```
 .
 ├── assignment1/
-│   ├── producer_consumer.py      # Main implementation
-│   ├── test_producer_consumer.py # Unit tests
-│   └── README.md                 # Detailed documentation
+│   ├── producer_consumer.py
+│   ├── test_producer_consumer.py
+│   └── README.md
 ├── assignment2/
-│   ├── generate_data.py          # CSV data generator
-│   ├── data_analyzer.py          # Analysis functions
-│   ├── test_data_analyzer.py     # Unit tests
+│   ├── generate_data.py
+│   ├── data_analyzer.py
+│   ├── test_data_analyzer.py
 │   ├── data/
-│   │   └── sales_data.csv        # Sample data
-│   └── README.md                 # Detailed documentation
-└── README.md                     # This file
+│   │   └── sales_data.csv
+│   └── README.md
+└── README.md
 ```
 
 ## Running All Tests
 
+Run all tests for both assignments:
 ```bash
-# Run all tests for both assignments
 pytest assignment1/test_producer_consumer.py assignment2/test_data_analyzer.py -v
 ```
 
 ## Design Philosophy
 
-**Assignment 1** demonstrates thread synchronization using Python's built-in `queue.Queue`, which handles all synchronization automatically. The sentinel pattern is used for clean shutdown logic, eliminating race conditions.
+Assignment 1 demonstrates thread synchronization using Python's built-in queue.Queue, which handles all synchronization automatically. The sentinel pattern is used for clean shutdown logic, eliminating race conditions.
 
-**Assignment 2** emphasizes functional programming patterns (reduce, map, sorted, lambda) over imperative loops, making the code more declarative and easier to reason about.
+Assignment 2 emphasizes functional programming patterns over imperative loops, making the code more declarative and easier to reason about. All analysis functions use reduce, map, sorted, and lambda functions rather than traditional loops.
 
 Both assignments include comprehensive test coverage and detailed documentation.
-

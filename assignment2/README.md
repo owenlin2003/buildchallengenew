@@ -2,44 +2,11 @@
 
 CSV data analysis implementation using functional programming paradigms. Reads sales transaction data from CSV and performs various analytical queries using map, filter, reduce, and other functional programming constructs.
 
-## Features
+The CSV file contains sales transaction data with transaction_id, date, product_name, category, region, salesperson, quantity, unit_price, and total_amount fields. Dates are in YYYY-MM-DD format.
 
-- CSV data loading and parsing
-- Six analytical queries using functional programming patterns
-- Grouping and aggregation operations
-- Sorting and filtering operations
-- Comprehensive unit test coverage
+The analysis module implements six analytical queries. Total revenue by product groups transactions by product and sums total revenue. Total revenue by category does the same but groups by category. Top 5 salespeople by revenue groups by salesperson, sums revenue, and returns the top 5. Sales by region groups transactions by region and sums total sales. Average transaction value calculates the mean transaction amount across all transactions. Monthly sales trend groups transactions by month and sums revenue.
 
-## Dataset Structure
-
-The CSV file contains sales transaction data with the following fields:
-
-- `transaction_id`: Unique transaction identifier
-- `date`: Transaction date (YYYY-MM-DD format)
-- `product_name`: Name of the product sold
-- `category`: Product category
-- `region`: Sales region
-- `salesperson`: Name of the salesperson
-- `quantity`: Quantity sold
-- `unit_price`: Price per unit
-- `total_amount`: Total transaction amount (quantity * unit_price)
-
-## Implementation
-
-The analysis module (`data_analyzer.py`) implements six analytical queries:
-
-1. **Total Revenue by Product**: Groups transactions by product and sums total revenue
-2. **Total Revenue by Category**: Groups transactions by category and sums total revenue
-3. **Top 5 Salespeople by Revenue**: Groups by salesperson, sums revenue, and returns top 5
-4. **Sales by Region**: Groups transactions by region and sums total sales
-5. **Average Transaction Value**: Calculates mean transaction amount across all transactions
-6. **Monthly Sales Trend**: Groups transactions by month and sums revenue
-
-All functions use functional programming patterns:
-- `reduce()` with accumulator functions for grouping and aggregation
-- `map()` for data transformation
-- `sorted()` with lambda functions for ordering
-- List comprehensions where appropriate
+All functions use functional programming patterns. reduce() with accumulator functions handles grouping and aggregation. map() transforms data. sorted() with lambda functions handles ordering. List comprehensions are used where appropriate.
 
 ## Usage
 
@@ -124,35 +91,14 @@ SALES DATA ANALYSIS RESULTS
 
 ## Design Decisions
 
-**Functional Programming Approach**: All analysis functions use functional programming patterns (reduce, map, sorted) rather than imperative loops. This makes the code more declarative and easier to reason about.
+All analysis functions use functional programming patterns rather than imperative loops. This makes the code more declarative and easier to reason about. Grouping operations use reduce() with accumulator functions that build dictionaries incrementally, which is more functional than using defaultdict or manual loops.
 
-**Reduce for Aggregation**: Grouping operations use `reduce()` with accumulator functions that build dictionaries incrementally. This is more functional than using defaultdict or manual loops.
-
-**Immutable Data Structures**: Functions take lists of dictionaries and return new data structures without modifying input, following functional programming principles.
-
-**Lambda Functions**: Used with `sorted()` and `map()` for concise, functional transformations.
-
-**No External Dependencies**: Uses only Python standard library (csv, functools, collections) to keep the implementation simple and portable.
+Functions take lists of dictionaries and return new data structures without modifying input, following functional programming principles. Lambda functions are used with sorted() and map() for concise transformations. The implementation uses only Python standard library to keep things simple and portable.
 
 ## Testing
 
-The test suite (`test_data_analyzer.py`) includes 12 test cases covering:
-- All 6 analysis functions with sample data
-- Edge cases (empty lists, single transactions)
-- CSV loading functionality
-- Multiple month scenarios
-- Top N count validation
-
-All tests pass and validate that functional programming patterns work correctly.
+The test suite includes 12 test cases covering all 6 analysis functions with sample data, edge cases like empty lists and single transactions, CSV loading functionality, multiple month scenarios, and top N count validation. All tests pass and validate that functional programming patterns work correctly.
 
 ## Data Generation
 
-The `generate_data.py` script creates synthetic sales data with:
-- 150 transactions
-- 14 products across 4 categories
-- 5 regions
-- 9 salespeople
-- Dates spanning 6 months (January - June 2024)
-
-Data is randomly generated but maintains realistic relationships (e.g., total_amount = quantity * unit_price).
-
+The generate_data.py script creates synthetic sales data with 150 transactions, 14 products across 4 categories, 5 regions, 9 salespeople, and dates spanning 6 months from January to June 2024. Data is randomly generated but maintains realistic relationships like total_amount equaling quantity times unit_price.
